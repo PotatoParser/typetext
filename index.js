@@ -1,41 +1,53 @@
-async function typeText(target, text, opts = {}) {
-	opts = Object.assign({
-		delay: 50
-	}, opts);
+Object.defineProperty(Element.prototype, 'typetext', {
+	async value(text, opts = {}) {
+		if (this.tagName === 'SCRIPT') return;
 
-	const sleep = ms => new Promise(r => setTimeout(r, ms));
+		opts = Object.assign({
+			delay: 50,
+			whitespace: true,
+			before: char => char,
+			after: () => 0
+		}, opts);
 
-	if (!(target instanceof Element)) throw new Error('Target must be element');
+		const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-	if (typeof arguments[1] !== 'string') {
-		const temp = target.innerHTML;
-		target.innerHTML = '';
-		return await typeText(target, temp, opts);
-	}
+		if (typeof arguments[0] !== 'string') {
+			opts = text;
+			text = this.innerHTML;
+			this.innerHTML = '';
+			return await this.typetext(text, opts);
+		}
 
-	if (arguments.length === 3 && typeof text !== 'string') throw new Error('Text must be a string');
+		if (arguments.length === 2 && typeof text !== 'string') throw new Error('Text must be a string');
 
-	const div = document.createElement('div');
-	div.innerHTML = text;
-	target.innerHTML = '';
+		const div = document.createElement('div');
+		div.innerHTML = text;
+		this.innerHTML = '';
 
-	for (const i of Array.from(div.childNodes)) {
-		if (i instanceof Element) {
-			target.appendChild(i);
-			await typeText(i, i.innerHTML, opts);
-		} else {
-			const t = i.textContent;
-			i.textContent = '';
-			target.appendChild(i);
-			for (let k of t) {
-				if (typeof opts.beforetype === 'function') k = await opts.beforetype(k, i, t, opts);
+		for (const i of [...div.childNodes]) {
+			if (i instanceof Element) {
+				this.appendChild(i);
+				await i.typetext(opts);
+			} else {
+				const t = i.textContent;
+				i.textContent = '';
+				this.appendChild(i);
+				for (let k of t) {
+					if (!opts.whitespace && /\s/.test(k)) {
+						i.textContent += k;
+						continue;
+					}
 
-				if (opts.delay) await sleep(opts.delay);
+					k = await opts.before(k, i, t, opts);
 
-				i.textContent += k;
+					if (opts.delay) await sleep(opts.delay);
 
-				if (typeof opts.aftertype === 'function') await opts.aftertype(k, i, t, opts);
+					i.textContent += k;
+
+					await opts.after(k, i, t, opts);
+				}
 			}
 		}
+		return true;
 	}
-}
+});

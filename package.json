@@ -1,11 +1,11 @@
 {
   "name": "typetext",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Easy, lightweight, and conservative text typing!",
   "main": "index.js",
   "scripts": {
-    "lint": "eslint index.js",
-    "lint:fix": "eslint index.js --fix",
+    "lint": "eslint index.js build.js",
+    "lint:fix": "eslint index.js build.js --fix",
     "build": "node build.js TEST && npm run terser",
     "terser": "terser -c -m -o ./build/typetext.min.js ./build/typetext.js"
   },
